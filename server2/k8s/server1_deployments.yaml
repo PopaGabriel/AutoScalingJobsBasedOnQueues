@@ -1,0 +1,110 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: licenta
+  name: licenta
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: licenta
+  template:
+    metadata:
+      labels:
+        app: licenta
+    spec:
+      containers:
+        - image: docker2-neteng-{ENVIRONMENT}-local.dr-uw2.adobeitc.com/hive-ingestion-image:latest
+          imagePullPolicy: Always
+          name: licenta
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: "default"
+            - name: RABBITMQ_DEFAULT_PASS
+              value: "default"
+          command:
+            ["uvicorn", "wsgi:app", "--port", "5000", "--host", "0.0.0.0"]
+          ports:
+            - containerPort: 5000
+              name: http
+              protocol: TCP
+---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   labels:
+#     app: worker-ingestion
+#   name: worker-ingestion
+#   namespace: default
+# spec:
+#   replicas: 5
+#   selector:
+#     matchLabels:
+#       app: worker-ingestion
+#   template:
+#     metadata:
+#       labels:
+#         app: worker-ingestion
+#     spec:
+#       containers:
+#         - image: server1_image:latest
+#           imagePullPolicy: Never
+#           name: worker-ingestion
+#           env:
+#             - name: RABBITMQ_DEFAULT_USER
+#               value: "default"
+#             - name: RABBITMQ_DEFAULT_PASS
+#               value: "default"
+
+#           command:
+#             [
+#               "celery",
+#               "--app=src.libs.tasks",
+#               "worker",
+#               "--loglevel=info",
+#               "-c",
+#               "5",
+#             ]
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   labels:
+#     app: worker-ingestion-flower
+#   name: worker-ingestion-flower
+#   namespace: default
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: worker-ingestion-flower
+#   template:
+#     metadata:
+#       labels:
+#         app: worker-ingestion-flower
+#     spec:
+#       containers:
+#         - envFrom:
+#           image: docker2-neteng-{ENVIRONMENT}-local.dr-uw2.adobeitc.com/hive-ingestion-image:latest
+#           imagePullPolicy: Always
+#           name: worker-ingestion-flower
+#           env:
+#             - name: RABBITMQ_DEFAULT_USER
+#               value: "default"
+#             - name: RABBITMQ_DEFAULT_PASS
+#               value: "default"
+
+#           command:
+#             [
+#               "celery",
+#               "--app=src.libs.tasks",
+#               "flower",
+#               "--port=5566",
+#               "--address=0.0.0.0",
+#               "--purge_offline_workers=120",
+#             ]
+#           ports:
+#             - containerPort: 5566

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: server1_app
+  name: server1_app
+  namespace: minikube
+spec:
+  ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 5000
+  selector:
+    app: server1_app
+  type: ClusterIP
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   labels:
+#     app: flower
+#   name: flower
+#   namespace: minikube
+# spec:
+#   ports:
+#     - name: https
+#       port: 443
+#       protocol: TCP
+#       targetPort: 5566
+#   selector:
+#     app: flower
+#   type: ClusterIP
