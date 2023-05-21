@@ -1,8 +1,5 @@
-# AutoScalingJobsBasedOnQueues
-
-For local hosting of pods, services and deployments I use minikube with the podman
-driver. Even so, for more general usability the podman commands have been linked
-docker, this is only an aestetic change so commands can still be run with docker 
-not podman. 
-(Link to the guide here https://gist.github.com/kaaquist/dab64aeb52a815b935b11c86202761a3)
-
+build server1_image
+port forward 5000:5000
+port forward 5001:5001
+locustfile
+locust host -> http://127.0.0.1:5000

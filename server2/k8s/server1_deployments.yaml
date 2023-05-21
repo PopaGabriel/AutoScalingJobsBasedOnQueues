@@ -17,94 +17,89 @@ spec:
         app: licenta
     spec:
       containers:
-        - image: docker2-neteng-{ENVIRONMENT}-local.dr-uw2.adobeitc.com/hive-ingestion-image:latest
-          imagePullPolicy: Always
+        - image: server1_image
+          imagePullPolicy: Never
           name: licenta
-          env:
-            - name: RABBITMQ_DEFAULT_USER
-              value: "default"
-            - name: RABBITMQ_DEFAULT_PASS
-              value: "default"
           command:
             ["uvicorn", "wsgi:app", "--port", "5000", "--host", "0.0.0.0"]
           ports:
             - containerPort: 5000
-              name: http
-              protocol: TCP
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "150m"
+
+#Workers
 ---
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   labels:
-#     app: worker-ingestion
-#   name: worker-ingestion
-#   namespace: default
-# spec:
-#   replicas: 5
-#   selector:
-#     matchLabels:
-#       app: worker-ingestion
-#   template:
-#     metadata:
-#       labels:
-#         app: worker-ingestion
-#     spec:
-#       containers:
-#         - image: server1_image:latest
-#           imagePullPolicy: Never
-#           name: worker-ingestion
-#           env:
-#             - name: RABBITMQ_DEFAULT_USER
-#               value: "default"
-#             - name: RABBITMQ_DEFAULT_PASS
-#               value: "default"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: licenta-worker
+  name: licenta-worker
+  namespace: default
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: licenta-worker
+  template:
+    metadata:
+      labels:
+        app: licenta-worker
+    spec:
+      containers:
+        - image: server1_image
+          imagePullPolicy: Never
+          name: licenta-worker
+          command:
+            ["celery", "--app=tasks", "worker", "--loglevel=info", "-c", "5"]
+          resources:
+            requests:
+              memory: "250Mi"
+              cpu: "100m"
+            limits:
+              memory: "500Mi"
+              cpu: "250m"
 
-#           command:
-#             [
-#               "celery",
-#               "--app=src.libs.tasks",
-#               "worker",
-#               "--loglevel=info",
-#               "-c",
-#               "5",
-#             ]
-# ---
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   labels:
-#     app: worker-ingestion-flower
-#   name: worker-ingestion-flower
-#   namespace: default
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: worker-ingestion-flower
-#   template:
-#     metadata:
-#       labels:
-#         app: worker-ingestion-flower
-#     spec:
-#       containers:
-#         - envFrom:
-#           image: docker2-neteng-{ENVIRONMENT}-local.dr-uw2.adobeitc.com/hive-ingestion-image:latest
-#           imagePullPolicy: Always
-#           name: worker-ingestion-flower
-#           env:
-#             - name: RABBITMQ_DEFAULT_USER
-#               value: "default"
-#             - name: RABBITMQ_DEFAULT_PASS
-#               value: "default"
+# Flower UI
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: worker-ingestion-flower
+  name: worker-ingestion-flower
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker-ingestion-flower
+  template:
+    metadata:
+      labels:
+        app: worker-ingestion-flower
+    spec:
+      containers:
+        - image: server1_image
+          imagePullPolicy: Never
+          name: worker-ingestion-flower
+          command:
+            [
+              "celery",
+              "--app=tasks",
+              "flower",
+              "--port=5001",
+              "--broker=amqp://default:default@rabbitmq:5672/",
+              "--address=0.0.0.0",
+              "--purge_offline_workers=120",
+            ]
+          ports:
+            - containerPort: 5001
+#Load Tester
+---
 
-#           command:
-#             [
-#               "celery",
-#               "--app=src.libs.tasks",
-#               "flower",
-#               "--port=5566",
-#               "--address=0.0.0.0",
-#               "--purge_offline_workers=120",
-#             ]
-#           ports:
-#             - containerPort: 5566

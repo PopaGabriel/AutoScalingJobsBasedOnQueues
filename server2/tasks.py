@@ -3,7 +3,7 @@ import time
 
 
 backend = "rpc://"
-broker = f"pyamqp://default:default@localhost:{port}//"
+broker = "amqp://default:default@rabbitmq"
 
 celery_app = Celery(main="tasks", backend=backend, broker=broker)
 celery_app.autodiscover_tasks()
