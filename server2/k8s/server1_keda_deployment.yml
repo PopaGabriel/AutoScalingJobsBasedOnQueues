@@ -1,0 +1,20 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: licenta-worker-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: licenta-worker
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 5
+  maxReplicaCount: 20
+  triggers:
+    - type: rabbitmq
+      metadata:
+        host: amqp://default:default@rabbitmq.default:5672
+        protocol: auto
+        queueName: wait_worker-queue
+        mode: QueueLength
+        value: "20"

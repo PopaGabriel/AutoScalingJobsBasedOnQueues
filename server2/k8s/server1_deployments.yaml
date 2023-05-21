@@ -27,10 +27,10 @@ spec:
           resources:
             requests:
               memory: "64Mi"
-              cpu: "100m"
+              cpu: "200m"
             limits:
               memory: "128Mi"
-              cpu: "150m"
+              cpu: "300m"
 
 #Workers
 ---
@@ -42,7 +42,7 @@ metadata:
   name: licenta-worker
   namespace: default
 spec:
-  replicas: 6
+  replicas: 3
   selector:
     matchLabels:
       app: licenta-worker
@@ -98,8 +98,14 @@ spec:
               "--address=0.0.0.0",
               "--purge_offline_workers=120",
             ]
+          resources:
+            requests:
+              memory: "250Mi"
+              cpu: "100m"
+            limits:
+              memory: "500Mi"
+              cpu: "250m"
           ports:
             - containerPort: 5001
-#Load Tester
 ---
 
