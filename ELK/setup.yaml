@@ -1,0 +1,24 @@
+antiAffinity: "soft"
+replicas: 1
+esJavaOpts: "-Xmx128m -Xms128m"
+resources:
+  requests:
+    cpu: "100m"
+    memory: "512M"
+  limits:
+    cpu: "1000m"
+    memory: "512M"
+cluster:
+  initial_master_nodes:
+    - elasticsearch-master-0
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: "local-path"
+  resources:
+    requests:
+      storage: 100M
+
+env:
+  - name: "ingest.geoip.downloader.enabled"
+    value: "false"

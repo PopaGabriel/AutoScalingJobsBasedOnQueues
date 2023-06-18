@@ -1,0 +1,44 @@
+replicaCount: 1
+
+image:
+  name: server2-app
+  repository: server2_image
+  tag: latest
+deployment:
+  namespace: default
+  nameFrontend: server2-app
+  nameWorker: server2-app-worker
+  replicaCountFrontend: 5
+  replicaCountWorker: 5
+service:
+  name: server2-app
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+  portName: metrics
+  namespace: default
+
+serviceMonitor:
+  enabled: true
+  name: service-monitor-server2
+  release: prometheus-stack
+  namespace: default
+  portname: metrics
+  interval: 2s
+  selector:
+    matchLabels:
+      app: server2-app
+
+prometheus:
+  metricName: http_requests_total
+  address: http://10.100.128.214:9090
+  threshold: 100
+  query: sum(increase(http_requests_total{deployment='mydeployment'}[2m]))
+  target: server2-app
+
+rabbitmq:
+  target: server2-app-worker
+  address: amqp://default:default@rabbitmq.default:5672
+  queueName: example2_queue
+  queueLength: "20"
+  host: rabbitmq-host

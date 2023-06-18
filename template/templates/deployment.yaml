@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{.Values.deployment.nameFrontend}}
+  name: {{.Values.deployment.nameFrontend}}
+  namespace: {{.Values.deployment.namespace}}
+spec:
+  replicas: {{.Values.deployment.replicaCountFrontend}}
+  selector:
+    matchLabels:
+      app: {{.Values.deployment.nameFrontend}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.deployment.nameFrontend}}
+    spec:
+      containers:
+        - image: "{{.Values.image.repository}}:{{.Values.image.tag}}"
+          imagePullPolicy: Never
+          name: {{.Values.deployment.nameFrontend}}
+          command:
+            ["uvicorn", "wsgi:app", "--port", "5000", "--host", "0.0.0.0"]
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "200m"
+            limits:
+              memory: "128Mi"
+              cpu: "300m"
+---
+#Workers
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{.Values.deployment.nameWorker}}
+  name: {{.Values.deployment.nameWorker}}
+  namespace: {{.Values.deployment.namespace}}
+spec:
+  replicas: {{.Values.deployment.replicaCountBackend}}
+  selector:
+    matchLabels:
+      app: {{.Values.deployment.nameWorker}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.deployment.nameWorker}}
+    spec:
+      containers:
+        - image: "{{.Values.image.repository}}:{{.Values.image.tag}}"
+          imagePullPolicy: Never
+          name: {{.Values.deployment.nameWorker}}
+          command:
+            ["celery", "--app=tasks", "worker", "--loglevel=info", "-c", "5"]
+          resources:
+            requests:
+              memory: "250Mi"
+              cpu: "100m"
+            limits:
+              memory: "500Mi"
+              cpu: "250m"
+          env:
+            - name: BACKEND
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: BACKEND
+            - name: BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: BROKER

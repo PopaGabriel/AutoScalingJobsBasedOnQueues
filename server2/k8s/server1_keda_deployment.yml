@@ -20,3 +20,24 @@ spec:
         queueName: wait_worker-queue
         mode: QueueLength
         value: "20"
+---
+# FRONTEND SCALERS
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fastapi-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: licenta
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 0
+  maxReplicaCount: 100
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-server.default.svc.cluster.local:9090
+        metricName: http_requests_total
+        threshold: "100"
+        query: sum(increase(http_requests_total{deployment='licenta'}[2m]))

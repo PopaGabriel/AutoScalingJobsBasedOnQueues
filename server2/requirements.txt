@@ -5,3 +5,4 @@ aiohttp
 requests
 celery
 flower
+prometheus-fastapi-instrumentator

@@ -1,0 +1,153 @@
+# Source: example_chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: server2-app
+  labels:
+    app: server2-app
+  namespace: default
+spec:
+  selector:
+    app: server2-app
+  ports:
+    - name: metrics
+      port: 80
+      targetPort: 5000
+---
+# Source: example_chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: server2-app
+  name: server2-app
+  namespace: default
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: server2-app
+  template:
+    metadata:
+      labels:
+        app: server2-app
+    spec:
+      containers:
+        - image: "server2_image:latest"
+          imagePullPolicy: Never
+          name: server2-app
+          command:
+            ["uvicorn", "wsgi:app", "--port", "5000", "--host", "0.0.0.0"]
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "200m"
+            limits:
+              memory: "128Mi"
+              cpu: "300m"
+---
+# Source: example_chart/templates/deployment.yaml
+#Workers
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: server2-app-worker
+  name: server2-app-worker
+  namespace: default
+spec:
+  replicas:
+  selector:
+    matchLabels:
+      app: server2-app-worker
+  template:
+    metadata:
+      labels:
+        app: server2-app-worker
+    spec:
+      containers:
+        - image: "server2_image:latest"
+          imagePullPolicy: Never
+          name: server2-app-worker
+          command:
+            ["celery", "--app=tasks", "worker", "--loglevel=info", "-c", "5"]
+          resources:
+            requests:
+              memory: "250Mi"
+              cpu: "100m"
+            limits:
+              memory: "500Mi"
+              cpu: "250m"
+          env:
+            - name: BACKEND
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: BACKEND
+            - name: BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: BROKER
+---
+# Source: example_chart/templates/scaled-object-prometheus.yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: server2-app-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: server2-app
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 0
+  maxReplicaCount: 100
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://10.100.128.214:9090
+        metricName: http_requests_total
+        threshold: 100
+        query: sum(increase(http_requests_total{deployment='mydeployment'}[2m]))
+---
+# Source: example_chart/templates/scaled-object-rabbitmq.yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: server2-app-worker-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: server2-app-worker
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 5
+  maxReplicaCount: 20
+  triggers:
+    - type: rabbitmq
+      metadata:
+        host: amqp://default:default@rabbitmq.default:5672
+        protocol: auto
+        queueName: example2_queue
+        mode: QueueLength
+        value: 20
+---
+# Source: example_chart/templates/service_monitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: service-monitor-server2
+  namespace: default
+  labels:
+    release: prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: server2-app
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 2s

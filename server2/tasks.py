@@ -1,10 +1,11 @@
 from celery import Celery
 import time
 from kombu import Queue
+from os import getenv
 
 
-backend = "rpc://"
-broker = "amqp://default:default@rabbitmq"
+backend = getenv("BACKEND", "rpc://")
+broker = getenv("BROKER", "rpc://")
 
 celery_app = Celery(main="tasks", backend=backend, broker=broker)
 celery_app.conf.task_queues = (

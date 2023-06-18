@@ -64,6 +64,17 @@ spec:
             limits:
               memory: "500Mi"
               cpu: "250m"
+          env:
+            - name: BACKEND
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: BACKEND
+            - name: BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: BROKER
 
 # Flower UI
 ---

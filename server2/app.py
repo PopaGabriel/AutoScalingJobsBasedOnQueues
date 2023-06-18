@@ -4,9 +4,10 @@
 import logging
 import sys
 import time
-from fastapi import FastAPI
 
+from fastapi import FastAPI
 from fastapi.logger import logger as fastapi_logger
+from prometheus_fastapi_instrumentator import Instrumentator
 from tasks import wait_worker
 
 gunicorn_error_logger = logging.getLogger("gunicorn.error")
@@ -21,6 +22,7 @@ app = FastAPI(
     docs_url="/example1/docs",
     redoc_url="/example1/redoc",
 )
+Instrumentator().instrument(app).expose(app)
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s",
